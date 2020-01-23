@@ -19,3 +19,4 @@ cabal.project.local
 roms/test/dump
 roms/games/
 stack.yaml.lock
+dist-newstyle
