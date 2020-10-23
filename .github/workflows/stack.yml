@@ -27,6 +27,12 @@ jobs:
         stack-version: "2.5.1"
         enable-stack: true
 
+    - name: Install libralies (linux)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libsdl2-dev
+
     - name: Install libralies (mac)
       if: runner.os == 'macOS'
       # workaround: https://github.com/actions/virtual-environments/issues/1811
