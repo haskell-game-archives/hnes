@@ -1,26 +1,27 @@
-module Emulator.Mapper (
-    Mapper(..)
-  , new
-) where
+module Emulator.Mapper
+  ( Mapper (..),
+    new,
+  )
+where
 
-import           Data.Word
-import           Emulator.Cartridge
+import Data.Word
+import Emulator.Cartridge
 import qualified Emulator.Mapper.Mapper2 as Mapper2
 import qualified Emulator.Mapper.Mapper3 as Mapper3
 import qualified Emulator.Mapper.Mapper7 as Mapper7
 
 data Mapper = Mapper
-  { read  :: Word16 -> IO Word8
-  , write :: Word16 -> Word8 -> IO ()
+  { read :: Word16 -> IO Word8,
+    write :: Word16 -> Word8 -> IO ()
   }
 
 new :: Cartridge -> IO Mapper
 new cart = case mapperType cart of
-  0     -> mapper2 cart
-  2     -> mapper2 cart
-  3     -> mapper3 cart
-  7     -> mapper7 cart
-  66    -> mapper2 cart
+  0 -> mapper2 cart
+  2 -> mapper2 cart
+  3 -> mapper3 cart
+  7 -> mapper7 cart
+  66 -> mapper2 cart
   other -> error $ "Unsupported mapper type " ++ show other
 
 mapper2 :: Cartridge -> IO Mapper

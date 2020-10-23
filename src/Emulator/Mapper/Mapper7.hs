@@ -21,7 +21,7 @@ data Mapper7 = Mapper7
   }
 
 new :: Cartridge -> IO Mapper7
-new cart @ Cartridge{..} = do
+new cart@Cartridge{} = do
   prgBank <- newIORef 0
   pure $ Mapper7 cart prgBank
 
@@ -43,7 +43,8 @@ write (Mapper7 Cartridge {..} prgBank) addr v
     let m = case v .&. 0x10 of
           0x00 -> MirrorSingle0
           0x10 -> MirrorSingle1
-    modifyIORef mirror (const m)
+          _ -> undefined
+    writeIORef mirror m
   | addr' >= 0x6000 = VUM.write sram (addr' - 0x6000) v
   | otherwise = error $ "Erroneous cart write detected!" ++ prettifyWord16 addr
   where addr' = fromIntegral addr

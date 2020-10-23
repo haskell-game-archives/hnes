@@ -1,17 +1,18 @@
-module Emulator.CPU(
-    reset
-  , step
-  , stepT
-) where
+module Emulator.CPU
+  ( reset,
+    step,
+    stepT,
+  )
+where
 
-import           Control.Monad
-import           Data.Bits       hiding (bit)
-import           Data.Word
-import           Emulator.Nes
-import           Emulator.Opcode
-import           Emulator.Trace  (Trace, mkTrace)
-import           Emulator.Util
-import           Prelude         hiding (and, compare)
+import Control.Monad
+import Data.Bits hiding (bit)
+import Data.Word
+import Emulator.Nes
+import Emulator.Opcode
+import Emulator.Trace (Trace, mkTrace)
+import Emulator.Util
+import Prelude hiding (and, compare)
 
 reset :: Emulator ()
 reset = do
@@ -37,7 +38,6 @@ step = do
 
 stepT :: Emulator (Int, Trace)
 stepT = do
-
   -- Start counting the number of cycles.
   -- Some of the opcodes (the branch ones)
   -- modify the cycle count directly due to page crosses
@@ -59,7 +59,7 @@ loadNextOpcode = do
   pure $ decodeOpcode av
 
 addressPageCrossForMode :: AddressMode -> Emulator (Bool, Word16)
-addressPageCrossForMode mode = case mode of
+addressPageCrossForMode mode' = case mode' of
   Absolute -> do
     pcv <- loadCpu pc
     addrV <- readCpuMemory16 (pcv + 1)
@@ -126,16 +126,18 @@ addressPageCrossForMode mode = case mode of
     pure (False, toWord16 $ v + yv)
 
 differentPages :: Word16 -> Word16 -> Bool
-differentPages a b = (a .&. 0xFF00) /= (b .&. 0xFF00)
+differentPages a' b = (a' .&. 0xFF00) /= (b .&. 0xFF00)
 
 incrementPc :: Opcode -> Emulator ()
 incrementPc opcode = modifyCpu pc (+ instrLength)
-  where instrLength = fromIntegral $ len opcode
+  where
+    instrLength = fromIntegral $ len opcode
 
 getCycles :: Opcode -> Bool -> Int
-getCycles opcode pageCrossed = if pageCrossed
-  then pageCrossCycles opcode + cycles opcode
-  else cycles opcode
+getCycles opcode pageCrossed =
+  if pageCrossed
+    then pageCrossCycles opcode + cycles opcode
+    else cycles opcode
 
 handleInterrupts :: Emulator ()
 handleInterrupts = do
@@ -143,14 +145,14 @@ handleInterrupts = do
   case int of
     Just NMI -> nmi
     Just IRQ -> error "not handling IRQ yet"
-    Nothing  -> pure ()
+    Nothing -> pure ()
   storeCpu interrupt Nothing
 
 runInstruction :: Opcode -> (Word16 -> Emulator ())
-runInstruction (Opcode _ mnemonic mode _ _ _) = case mnemonic of
+runInstruction (Opcode _ mnemonic mode' _ _ _) = case mnemonic of
   ADC -> adc
   AND -> and
-  ASL -> asl mode
+  ASL -> asl mode'
   BCC -> bcc
   BCS -> bcs
   BEQ -> beq
@@ -180,7 +182,7 @@ runInstruction (Opcode _ mnemonic mode _ _ _) = case mnemonic of
   LDA -> lda
   LDX -> ldx
   LDY -> ldy
-  LSR -> lsr mode
+  LSR -> lsr mode'
   NOP -> const nop
   PHA -> const pha
   PHP -> const php
@@ -189,8 +191,8 @@ runInstruction (Opcode _ mnemonic mode _ _ _) = case mnemonic of
   ORA -> ora
   RTI -> const rti
   RTS -> const rts
-  ROR -> ror mode
-  ROL -> rol mode
+  ROR -> ror mode'
+  ROL -> rol mode'
   SBC -> sbc
   SEC -> const sec
   SED -> const sed
@@ -209,10 +211,10 @@ runInstruction (Opcode _ mnemonic mode _ _ _) = case mnemonic of
   SAX -> sax
   DCP -> dcp
   ISC -> isc
-  RLA -> rla mode
-  RRA -> rra mode
-  SLO -> slo mode
-  SRE -> sre mode
+  RLA -> rla mode'
+  RRA -> rra mode'
+  SLO -> slo mode'
+  SRE -> sre mode'
   ANC -> anc
   ALR -> alr
   ARR -> arr
@@ -231,7 +233,7 @@ adc :: Word16 -> Emulator ()
 adc addr = do
   av <- loadCpu a
   bv <- readCpuMemory8 addr
-  cv <- (fromIntegral . fromEnum) <$> getFlag Carry
+  cv <- fromIntegral . fromEnum <$> getFlag Carry
   storeCpu a (av + bv + cv)
   av' <- loadCpu a
   setZN av'
@@ -242,16 +244,16 @@ adc addr = do
 
 -- ASL - Arithmetic shift left
 asl :: AddressMode -> Word16 -> Emulator ()
-asl mode addr = do
-  v <- case mode of
-      Accumulator -> loadCpu a
-      _           -> readCpuMemory8 addr
+asl mode' addr = do
+  v <- case mode' of
+    Accumulator -> loadCpu a
+    _ -> readCpuMemory8 addr
   let i = (v `shiftR` 7) .&. 1
   setFlag Carry (toEnum . fromIntegral $ i)
   let shiftedV = v `shiftL` 1
-  case mode of
-      Accumulator -> storeCpu a shiftedV
-      _           -> writeCpuMemory8 addr shiftedV
+  case mode' of
+    Accumulator -> storeCpu a shiftedV
+    _ -> writeCpuMemory8 addr shiftedV
   setZN shiftedV
 
 -- AND - Logical and
@@ -368,7 +370,6 @@ dex = do
   storeCpu x value
   setZN value
 
-
 -- DEY - Decrement Y register
 dey :: Emulator ()
 dey = do
@@ -386,7 +387,6 @@ eor addr = do
   storeCpu a newAv
   setZN newAv
 
-
 -- INC - Increment memory
 inc :: Word16 -> Emulator ()
 inc addr = do
@@ -397,7 +397,7 @@ inc addr = do
 
 -- INX - Increment X register
 inx :: Emulator ()
-inx  = do
+inx = do
   v <- loadCpu x
   let value = v + 1
   storeCpu x value
@@ -405,7 +405,7 @@ inx  = do
 
 -- INY - Increment Y register
 iny :: Emulator ()
-iny  = do
+iny = do
   v <- loadCpu y
   let value = v + 1
   storeCpu y value
@@ -445,18 +445,17 @@ ldy addr = do
 
 -- LSR - Logical shift right
 lsr :: AddressMode -> Word16 -> Emulator ()
-lsr mode addr = do
-  v <- case mode of
-      Accumulator -> loadCpu a
-      _           -> readCpuMemory8 addr
+lsr mode' addr = do
+  v <- case mode' of
+    Accumulator -> loadCpu a
+    _ -> readCpuMemory8 addr
 
   setFlag Carry (toEnum . fromIntegral $ v .&. 1)
   let shiftedV = v `shiftR` 1
-  case mode of
-      Accumulator -> storeCpu a shiftedV
-      _           -> writeCpuMemory8 addr shiftedV
+  case mode' of
+    Accumulator -> storeCpu a shiftedV
+    _ -> writeCpuMemory8 addr shiftedV
   setZN shiftedV
-
 
 -- NOP - No operation. Do nothing :D
 nop :: Emulator ()
@@ -471,8 +470,8 @@ pha = do
 -- PHP - Push processor status onto stack
 php :: Emulator ()
 php = do
-  p <- loadCpu p
-  push $ p .|. 0x10
+  p' <- loadCpu p
+  push $ p' .|. 0x10
 
 -- PLA - Pull Accumulator register
 pla :: Emulator ()
@@ -498,30 +497,30 @@ ora addr = do
 
 -- ROL - Rotate left
 rol :: AddressMode -> Word16 -> Emulator ()
-rol mode addr = do
-  v <- case mode of
-      Accumulator -> loadCpu a
-      _           -> readCpuMemory8 addr
-  cv <- (fromIntegral . fromEnum) <$> getFlag Carry
+rol mode' addr = do
+  v <- case mode' of
+    Accumulator -> loadCpu a
+    _ -> readCpuMemory8 addr
+  cv <- fromIntegral . fromEnum <$> getFlag Carry
   setFlag Carry (toEnum $ fromIntegral $ (v `shiftR` 7) .&. 1)
   let shiftedV = (v `shiftL` 1) .|. cv
-  case mode of
-      Accumulator -> storeCpu a shiftedV
-      _           -> writeCpuMemory8 addr shiftedV
+  case mode' of
+    Accumulator -> storeCpu a shiftedV
+    _ -> writeCpuMemory8 addr shiftedV
   setZN shiftedV
 
 -- ROR - Rotate right
 ror :: AddressMode -> Word16 -> Emulator ()
-ror mode addr = do
-  v <- case mode of
-      Accumulator -> loadCpu a
-      _           -> readCpuMemory8 addr
-  cv <- (fromIntegral . fromEnum) <$> getFlag Carry
+ror mode' addr = do
+  v <- case mode' of
+    Accumulator -> loadCpu a
+    _ -> readCpuMemory8 addr
+  cv <- fromIntegral . fromEnum <$> getFlag Carry
   setFlag Carry (toEnum $ fromIntegral $ v .&. 1)
   let shiftedV = (v `shiftR` 1) .|. (cv `shiftL` 7)
-  case mode of
-      Accumulator -> storeCpu a shiftedV
-      _           -> writeCpuMemory8 addr shiftedV
+  case mode' of
+    Accumulator -> storeCpu a shiftedV
+    _ -> writeCpuMemory8 addr shiftedV
   setZN shiftedV
 
 -- RTI - Return from interrupt
@@ -543,7 +542,7 @@ sbc :: Word16 -> Emulator ()
 sbc addr = do
   av <- loadCpu a
   bv <- readCpuMemory8 addr
-  cv <- (fromIntegral . fromEnum) <$> getFlag Carry
+  cv <- fromIntegral . fromEnum <$> getFlag Carry
   storeCpu a (av - bv - (1 - cv))
   av' <- loadCpu a
   setZN av'
@@ -588,7 +587,7 @@ tax = do
 
 -- TAY - Transfer Accumulator to Y
 tay :: Emulator ()
-tay =  do
+tay = do
   av <- loadCpu a
   storeCpu y av
   yv <- loadCpu y
@@ -654,9 +653,9 @@ arr :: Word16 -> Emulator ()
 arr addr = do
   and addr
   ror Accumulator addr
-  a <- loadCpu a
-  let bit5 = (a `shiftR` 5) .&. 0x1 == 1
-  let bit6 = (a `shiftR` 6) .&. 0x1 == 1
+  a' <- loadCpu a
+  let bit5 = (a' `shiftR` 5) .&. 0x1 == 1
+  let bit6 = (a' `shiftR` 6) .&. 0x1 == 1
   setFlag Carry bit6
   setFlag Overflow (bit6 `xor` bit5)
 
@@ -702,22 +701,22 @@ isc addr = inc addr >> sbc addr
 -- RLA - ROLs the contents of a memory location and then ANDs the result with
 -- the Accumulator.
 rla :: AddressMode -> Word16 -> Emulator ()
-rla mode addr = rol mode addr >> and addr
+rla mode' addr = rol mode' addr >> and addr
 
 -- SLO - ASLs the contents of a memory location and then ORs the result
 -- with the Accumulator.
 slo :: AddressMode -> Word16 -> Emulator ()
-slo mode addr = asl mode addr >> ora addr
+slo mode' addr = asl mode' addr >> ora addr
 
 -- SRE - LSRs the contents of a memory location and then EORs the result with
 -- the Accumulator.
 sre :: AddressMode -> Word16 -> Emulator ()
-sre mode addr = lsr mode addr >> eor addr
+sre mode' addr = lsr mode' addr >> eor addr
 
 -- RRA - RORs the contents of a memory location and then ADCs the result with
 -- the Accumulator
 rra :: AddressMode -> Word16 -> Emulator ()
-rra mode addr = ror mode addr >> adc addr
+rra mode' addr = ror mode' addr >> adc addr
 
 shx :: Word16 -> Emulator ()
 shx addr = do
@@ -731,9 +730,8 @@ shx addr = do
       v <- readCpuMemory8 addr
       writeCpuMemory8 addr v
 
-
 shy :: Word16 -> Emulator ()
-shy addr = pure ()
+shy _addr = pure ()
 
 -- NMI - Non Maskable Interrupt. Not strictly an opcode, but can represented as one
 nmi :: Emulator ()
@@ -752,8 +750,8 @@ branch cond addr = do
   pcv <- loadCpu pc
   when cv $ do
     storeCpu pc addr
-    let cycles = if differentPages pcv addr then 2 else 1
-    addCycles cycles
+    let cycles' = if differentPages pcv addr then 2 else 1
+    addCycles cycles'
 
 read16Bug :: Word16 -> Emulator Word16
 read16Bug addr = do
@@ -771,8 +769,7 @@ pull = do
 pull16 :: Emulator Word16
 pull16 = do
   lo <- pull
-  hi <- pull
-  pure $ makeW16 lo hi
+  makeW16 lo <$> pull
 
 push :: Word8 -> Emulator ()
 push v = do
@@ -796,7 +793,8 @@ setFlag :: Flag -> Bool -> Emulator ()
 setFlag flag b = do
   v <- loadCpu p
   storeCpu p (opBit v (7 - fromEnum flag))
-  where opBit = if b then setBit else clearBit
+  where
+    opBit = if b then setBit else clearBit
 
 -- Sets the zero flag
 setZ :: Word8 -> Emulator ()
@@ -815,12 +813,12 @@ setZN :: Word8 -> Emulator ()
 setZN v = setZ v >> setN v
 
 compare :: Word8 -> Word8 -> Emulator ()
-compare a b = do
-  setZN $ a - b
-  setFlag Carry (a >= b)
+compare a' b = do
+  setZN $ a' - b
+  setFlag Carry (a' >= b)
 
 illegal :: Mnemonic -> Emulator ()
-illegal mnem = pure ()
+illegal _mnem = pure ()
 
 addCycles :: Int -> Emulator ()
 addCycles n = modifyCpu cpuCycles (+ n)
