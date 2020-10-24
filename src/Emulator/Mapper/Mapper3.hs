@@ -23,7 +23,7 @@ data Mapper3 = Mapper3
   }
 
 new :: Cartridge -> IO Mapper3
-new cart @ Cartridge{..} = do
+new cart@Cartridge{} = do
   let prgBanks = VUM.length (Cartridge.prgRom cart) `div` 0x4000
   chrBank <- newIORef 0
   let prgBank1 = 0
@@ -46,7 +46,7 @@ write (Mapper3 Cartridge {..} chrBank _ _) addr v
   | addr' < 0x2000 = do
     chrBankV <- readIORef chrBank
     VUM.write chrRom ((chrBankV * 0x2000) + addr') v
-  | addr' >= 0x8000 = modifyIORef chrBank (const $ toInt v .&. 3)
+  | addr' >= 0x8000 = writeIORef chrBank (toInt v .&. 3)
   | addr' >= 0x6000 = VUM.write sram (addr' - 0x6000) v
   | otherwise = error $ "Erroneous cart write detected!" ++ prettifyWord16 addr
   where addr' = fromIntegral addr

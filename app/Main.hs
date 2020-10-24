@@ -1,18 +1,19 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Main where
 
-import           Control.Monad
-import qualified Data.ByteString     as BS
-import           Data.Maybe          (catMaybes)
-import           Data.Set            as Set hiding (foldl)
-import qualified Data.Text           as T
-import           Emulator            (reset, stepFrame)
-import           Emulator.Controller as Controller
-import           Emulator.Nes
-import           SDL
-import           SDL.Time
-import           System.Environment  (getArgs)
+import Control.Monad
+import qualified Data.ByteString as BS
+import Data.Maybe (catMaybes)
+import Data.Set as Set hiding (foldl)
+import qualified Data.Text as T
+import Emulator (reset, stepFrame)
+import Emulator.Controller as Controller
+import Emulator.Nes
+import SDL
+import SDL.Time
+import System.Environment (getArgs)
 
 main :: IO ()
 main = do
@@ -21,15 +22,17 @@ main = do
   -- Set up SDL
   SDL.initializeAll
   -- Create Window
-  let windowConfig = SDL.defaultWindow {
-    windowInitialSize = V2 (fromIntegral $ width * scale) (fromIntegral $ height * scale)
-  }
+  let windowConfig =
+        SDL.defaultWindow
+          { windowInitialSize = V2 (fromIntegral $ width * scale) (fromIntegral $ height * scale)
+          }
   window <- SDL.createWindow "hnes" windowConfig
   -- Create Renderer
-  let rendererConfig = RendererConfig {
-    rendererType          = AcceleratedVSyncRenderer,
-    rendererTargetTexture = True
-  }
+  let rendererConfig =
+        RendererConfig
+          { rendererType = AcceleratedVSyncRenderer,
+            rendererTargetTexture = True
+          }
   renderer <- SDL.createRenderer window (-1) rendererConfig
   -- Create NES
   runEmulator cart' $ do
@@ -46,15 +49,15 @@ appLoop lastTime frames renderer window = do
   copy renderer texture Nothing Nothing
   SDL.present renderer
 
-  time <- SDL.Time.time
-  let diff = time - lastTime
+  time' <- SDL.Time.time
+  let diff = time' - lastTime
 
-  if diff > 1.0 then do
-    let fps = round $ fromIntegral frames / diff
-    windowTitle window $= T.pack ("FPS = " ++ show fps)
-    unless (Exit `elem`  intents) (appLoop time 0 renderer window)
-  else
-    unless (Exit `elem` intents) (appLoop lastTime (frames + 1) renderer window)
+  if diff > 1.0
+    then do
+      let fps = round $ fromIntegral frames / diff
+      windowTitle window $= T.pack ("FPS = " ++ show @Int fps)
+      unless (Exit `elem` intents) (appLoop time' 0 renderer window)
+    else unless (Exit `elem` intents) (appLoop lastTime (frames + 1) renderer window)
 
 render :: SDL.Renderer -> Emulator SDL.Texture
 render renderer = do
@@ -72,27 +75,28 @@ eventsToIntents events = Set.fromList $ catMaybes $ eventToIntent . SDL.eventPay
     eventToIntent (SDL.KeyboardEvent k) = case k of
       (SDL.KeyboardEventData _ motion _ keysym) -> do
         let c = case motion of
-              SDL.Pressed  -> KeyPress
+              SDL.Pressed -> KeyPress
               SDL.Released -> KeyRelease
         case SDL.keysymKeycode keysym of
-          SDL.KeycodeQ      -> Just Exit
-          SDL.KeycodeZ      -> Just (c Controller.A)
-          SDL.KeycodeX      -> Just (c Controller.B)
-          SDL.KeycodeUp     -> Just (c Controller.Up)
-          SDL.KeycodeDown   -> Just (c Controller.Down)
-          SDL.KeycodeLeft   -> Just (c Controller.Left)
-          SDL.KeycodeRight  -> Just (c Controller.Right)
-          SDL.KeycodeSpace  -> Just (c Controller.Select)
+          SDL.KeycodeQ -> Just Exit
+          SDL.KeycodeZ -> Just (c Controller.A)
+          SDL.KeycodeX -> Just (c Controller.B)
+          SDL.KeycodeUp -> Just (c Controller.Up)
+          SDL.KeycodeDown -> Just (c Controller.Down)
+          SDL.KeycodeLeft -> Just (c Controller.Left)
+          SDL.KeycodeRight -> Just (c Controller.Right)
+          SDL.KeycodeSpace -> Just (c Controller.Select)
           SDL.KeycodeReturn -> Just (c Controller.Start)
-          _                 -> Nothing
+          _ -> Nothing
     eventToIntent _ = Nothing
 
 intentsToKeys :: Set Controller.Key -> Set Intent -> Set Controller.Key
 intentsToKeys = foldl' op
-  where op keys intent = case intent of
-          KeyPress key   -> Set.insert key keys
-          KeyRelease key -> Set.delete key keys
-          Exit           -> keys
+  where
+    op keys intent = case intent of
+      KeyPress key -> Set.insert key keys
+      KeyRelease key -> Set.delete key keys
+      Exit -> keys
 
 scale :: Int
 scale = 3

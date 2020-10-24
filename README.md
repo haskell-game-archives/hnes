@@ -1,6 +1,9 @@
 # hnes
 
-[![Build Status](https://travis-ci.org/dbousamra/hnes.svg?branch=master)](https://travis-ci.org/dbousamra/hnes)
+[![cabal](https://github.com/haskell-game-archives/hnes/workflows/cabal/badge.svg)](https://github.com/haskell-game-archives/hnes/actions?query=workflow%3Acabal)
+[![stack](https://github.com/haskell-game-archives/hnes/workflows/stack/badge.svg)](https://github.com/haskell-game-archives/hnes/actions?query=workflow%3Astack)
+[![lint](https://github.com/haskell-game-archives/hnes/workflows/lint/badge.svg)](https://github.com/haskell-game-archives/hnes/actions?query=workflow%3Alint)
+
 
 Welcome to hnes. hnes is a NES emulator written in Haskell.
 

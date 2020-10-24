@@ -1,19 +1,20 @@
-module Emulator.Controller (
-    Key(..)
-  , Controller(..)
-  , new
-  , read
-  , write
-  , setKeysDown
-  , readKeysDown
-) where
+module Emulator.Controller
+  ( Key (..),
+    Controller (..),
+    new,
+    read,
+    write,
+    setKeysDown,
+    readKeysDown,
+  )
+where
 
-import           Control.Monad (when)
-import           Data.Bits     ((.&.))
-import           Data.IORef
-import           Data.Set      as Set
-import           Data.Word
-import           Prelude       hiding (read)
+import Control.Monad (when)
+import Data.Bits ((.&.))
+import Data.IORef
+import Data.Set as Set
+import Data.Word
+import Prelude hiding (read)
 
 data Key
   = A
@@ -26,25 +27,22 @@ data Key
   | Right
   deriving (Show, Eq, Enum, Ord)
 
-data Controller = Controller {
-  index    :: IORef Int,
-  strobe   :: IORef Word8,
-  keysDown :: IORef (Set Key)
-} deriving (Eq)
+data Controller = Controller
+  { index :: IORef Int,
+    strobe :: IORef Word8,
+    keysDown :: IORef (Set Key)
+  }
+  deriving (Eq)
 
 new :: IO Controller
-new = do
-  index <- newIORef 0
-  strobe <- newIORef 0
-  keysDown <- newIORef Set.empty
-  pure $ Controller index strobe keysDown
+new = Controller <$> newIORef 0 <*> newIORef 0 <*> newIORef Set.empty
 
 read :: Controller -> IO Word8
 read c = do
   indexV <- readIORef $ index c
   keysDownV <- readIORef $ keysDown c
-  let value =  if indexV < 8 && elem (toEnum indexV) keysDownV then 1 else 0
-  modifyIORef' (index c) (+1)
+  let value = if indexV < 8 && elem (toEnum indexV) keysDownV then 1 else 0
+  modifyIORef' (index c) (+ 1)
 
   strobeV <- readIORef $ strobe c
   when (strobeV .&. 1 == 1) $
