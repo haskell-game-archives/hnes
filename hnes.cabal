@@ -66,12 +66,13 @@ test-suite hnes-test
   build-depends:
     , hnes
     , parsec       ^>=3.1
-    , tasty        >=1.2 && <1.5
+    , tasty        >=1.2  && <1.5
     , tasty-hunit  ^>=0.10
 
   -- cabal-fmt: expand test
   other-modules:
     Blargg.Spec
+    Main
     Nestest.Parsing
     Nestest.Spec
     SpecHelper
