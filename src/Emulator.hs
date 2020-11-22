@@ -1,14 +1,15 @@
-module Emulator (
-    step
-  , stepFrame
-  , reset
-) where
+module Emulator
+  ( step,
+    stepFrame,
+    reset,
+  )
+where
 
-import           Control.Monad
-import           Control.Monad.Loops
-import qualified Emulator.CPU        as CPU
-import           Emulator.Nes
-import qualified Emulator.PPU        as PPU
+import Control.Monad
+import Control.Monad.Loops
+import qualified Emulator.CPU as CPU
+import Emulator.Nes
+import qualified Emulator.PPU as PPU
 
 step :: Emulator ()
 step = do
@@ -24,4 +25,3 @@ stepFrame = do
 
 reset :: Emulator ()
 reset = CPU.reset >> PPU.reset
-
