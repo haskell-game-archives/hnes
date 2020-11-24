@@ -69,10 +69,9 @@ test-suite hnes-test
     , tasty        >=1.2  && <1.5
     , tasty-hunit  ^>=0.10
 
-  -- cabal-fmt: expand test
+  -- cabal-fmt: expand test -Main
   other-modules:
     Blargg.Spec
-    Main
     Nestest.Parsing
     Nestest.Spec
     SpecHelper
