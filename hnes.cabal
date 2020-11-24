@@ -8,6 +8,7 @@ author:             Dominic Bou-Samra
 copyright:          2017 Dominic Bou-Samra
 category:           Web
 build-type:         Simple
+tested-with:        GHC ==8.6.5 || ==8.8.4 || ==8.10.2
 extra-source-files: README.md
 
 common common
@@ -65,10 +66,10 @@ test-suite hnes-test
   build-depends:
     , hnes
     , parsec       ^>=3.1
-    , tasty        ^>=1.3
+    , tasty        >=1.2  && <1.5
     , tasty-hunit  ^>=0.10
 
-  -- cabal-fmt: expand test
+  -- cabal-fmt: expand test -Main
   other-modules:
     Blargg.Spec
     Nestest.Parsing
